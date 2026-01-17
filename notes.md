@@ -1,4 +1,4 @@
-#General notes
+#Technologies Used
 Python
 SQLite
 
@@ -11,3 +11,19 @@ Maybe add Elasticsearch?
 
 
 Use Fly.io or Render for container hosting
+
+
+#Steps
+Data
+Step 1. Define the data in models.py
+Step 2. Define how the data is stored in db.py
+Step 3. Ensure this is all defined correctly in config.py
+
+API
+Step 1. Set up FastAPI in main.py
+Step 2. Define API in api/products.py
+Step 3. Test in browser
+
+Ingestion/Scraping
+Step 1. Set up scraper to bring in data 
+Step 2. Confirm scraper is using models/db defined in Data step
