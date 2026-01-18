@@ -1,5 +1,6 @@
 from app.db import Base, engine, SessionLocal
 from app.models import Product
+from app.scrapers.example import scrape_example_product
 
 # Create all tables in the database
 Base.metadata.create_all(bind=engine)
@@ -19,13 +20,28 @@ test_product = Product(
     size_recommendation="under 10 lb"
 )
 
+data = scrape_example_product()
+
+#Map scraped data into a db entity
+product = Product(**data)
+
 # Add and commit
 db.add(test_product)
 db.commit()
+db.add(product)
+db.commit()
+
 
 # Query back to verify
-product_from_db = db.query(Product).first()
-print("Product in DB:", product_from_db.name, product_from_db.price)
+products = db.query(Product).all()
+for p in products:
+    print(
+        f"- ID={p.id} | "
+        f"{p.name} | "
+        f"${p.price} | "
+        f"{p.source} | "
+        f"{p.size_recommendation}"
+    )
 
 # Close session
 db.close()
