@@ -1,6 +1,7 @@
 from app.db import Base, engine, SessionLocal
 from app.models import Product
-from app.scrapers.example import scrape_example_product
+from app.scrapers.pet_store import scrape_pet_products
+from app.util.size_inference import infer_size_info
 
 # Create all tables in the database
 Base.metadata.create_all(bind=engine)
@@ -20,20 +21,39 @@ test_product = Product(
     size_recommendation="under 10 lb"
 )
 
-data = scrape_example_product()
-
-#Map scraped data into a db entity
-product = Product(**data)
+scraped_products = scrape_pet_products()
 
 # Add and commit
 db.add(test_product)
-db.commit()
-db.add(product)
+
+for data in scraped_products:
+    existing = (
+        db.query(Product)
+        .filter(Product.url == data["url"])
+        .first()
+    )
+
+    size_info = infer_size_info(
+        name=data["name"],
+        category=data.get("category")
+    )
+    data.update(size_info)
+
+    if existing:
+        existing.price = data["price"]
+        existing.last_seen_at = func.now()
+        print(f"🔄 Updated: {existing.name}")
+    else:
+        product = Product(**data)
+        db.add(product)
+        print(f"✅ Inserted: {data['name']}")
+
 db.commit()
 
 
 # Query back to verify
 products = db.query(Product).all()
+print("✅ Products in DB:" + str(len(products)))
 for p in products:
     print(
         f"- ID={p.id} | "

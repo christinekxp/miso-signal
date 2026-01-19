@@ -24,8 +24,12 @@ Step 4. Test this using init_db.py
 Ingestion/Scraping
 Step 1. Set up scraper to bring in data 
 Step 2. Start with a fake example scraper (just an example scraped data)
-Step 3. test connection to db using init_db.py
-Step 4.
+Step 3. Test connection to db using init_db.py
+
+Scraping Optimization
+Step 1. Update scraper to be better at classifying (dog products)
+Step 2. Add size/weight inference to the scraper
+Step 3. Add deduplication (update existing entries vs. adding them again)
 
 API
 Step 1. Set up FastAPI in main.py
