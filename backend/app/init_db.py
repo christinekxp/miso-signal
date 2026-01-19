@@ -2,6 +2,7 @@ from app.db import Base, engine, SessionLocal
 from app.models import Product
 from app.scrapers.pet_store import scrape_pet_products
 from app.util.size_inference import infer_size_info
+from app.api.products import get_all_products
 
 # Create all tables in the database
 Base.metadata.create_all(bind=engine)
@@ -52,7 +53,7 @@ db.commit()
 
 
 # Query back to verify
-products = db.query(Product).all()
+products = get_all_products(db)
 print("✅ Products in DB:" + str(len(products)))
 for p in products:
     print(

@@ -1,43 +1,29 @@
 from typing import Optional, Dict
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from app.db import SessionLocal
+from app.api.products import get_all_products
+from app.api import products
 import uvicorn
 
 app = FastAPI(
-    title="Miso Signal API",
-    version="0.1.0",
-    description="Starter FastAPI application"
+    title="Miso Signal API"
 )
 
-class Item(BaseModel):
-    id: Optional[int] = None
-    name: str
-    description: Optional[str] = None
-    price: float
-    is_offer: Optional[bool] = False
+app.include_router(products.router)
 
-# simple in-memory store
-_items: Dict[int, Item] = {}
-_next_id = 1
+@app.get("/products")
+def get_products():
+    db = SessionLocal()
+    products = get_all_products(db)
+    db.close()
 
-@app.get("/", tags=["health"])
-async def read_root():
-    return {"status": "ok"}
-
-@app.post("/items/", response_model=Item, status_code=201, tags=["items"])
-async def create_item(item: Item):
-    global _next_id
-    item.id = _next_id
-    _items[_next_id] = item
-    _next_id += 1
-    return item
-
-@app.get("/items/{item_id}", response_model=Item, tags=["items"])
-async def read_item(item_id: int):
-    item = _items.get(item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "price": p.price,
+            "url": p.url,
+        }
+        for p in products
+    ]
