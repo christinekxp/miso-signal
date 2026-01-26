@@ -40,3 +40,24 @@ def scrape_pet_products():
         })
 
     return products
+
+
+def classify_small_dog(title, description):
+    combined = f"{title.lower()} {description.lower()}"
+    return any(keyword in combined for keyword in DOG_KEYWORDS.get("small", []))
+
+def extract_max_weight(description):
+    match = re.search(r'up to (\d+)\s?(lbs|kg)', description.lower())
+    if match:
+        weight, unit = match.groups()
+        weight = int(weight)
+        if unit == "kg":
+            weight *= 2.20462
+        return weight
+    return None
+
+def is_duplicate(new_product, existing_products, threshold=90):
+    for prod in existing_products:
+        if fuzz.ratio(new_product['name'], prod['name']) > threshold:
+            return True
+    return False
