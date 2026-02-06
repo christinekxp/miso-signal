@@ -1,6 +1,10 @@
 import requests
-from app.util.keywords import DOG_KEYWORDS
 from bs4 import BeautifulSoup
+from rapidfuzz import fuzz
+import re
+
+from app.util.keywords import DOG_KEYWORDS
+from app.db import get_existing_products, save_product  # hypothetical DB helpers
 
 BASE_URL = "https://webscraper.io"
 
@@ -10,23 +14,40 @@ def scrape_pet_products():
     response = requests.get(url, timeout=10)
     response.raise_for_status()
 
+    if response.status_code != 200:
+        print("Failed to fetch page")
+        return []
+
     soup = BeautifulSoup(response.text, "html.parser")
+
+    existing_products = get_existing_products()  # returns list of dicts with 'name' keys
+
 
     products = []
 
     for item in soup.select(".thumbnail"):
         name_el = item.select_one(".title")
         price_el = item.select_one(".price")
+        desc_el = item.select_one(".description")  # optional description
+
 
         if not name_el or not price_el:
             continue
 
         name = name_el.text.strip()
         name_lower = name.lower()
+        description = desc_el.text.strip() if desc_el else ""
+
 
         # 🐶 POSITIVE dog-only filter
-        if not any(keyword in name_lower for keyword in DOG_KEYWORDS):
+        if not any(keyword in name_lower for keyword in DOG_KEYWORDS.get("all", [])):
             continue
+
+        # Small dog classification
+        small_dog = classify_small_dog(name, description)
+
+        # Weight inference
+        max_weight = extract_max_weight(description)
 
         price = float(price_el.text.replace("$", ""))
         product_url = BASE_URL + name_el["href"]
@@ -36,8 +57,20 @@ def scrape_pet_products():
             "category": "pet_accessory",
             "price": price,
             "url": product_url,
+            "small_dog": small_dog,
+            "max_weight": max_weight,
             "source": "WebScraperTestSite",
         })
+
+        # Deduplication
+        if is_duplicate(product_data, existing_products):
+            print(f"Skipping duplicate: {name}")
+            continue
+
+        # Save to DB
+        save_product(product_data)
+
+        products.append(product_data)
 
     return products
 
